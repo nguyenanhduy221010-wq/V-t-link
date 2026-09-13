@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LINK DESTINATION</title>
+  <style>
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100vh;display:grid;place-items:center;
+      font-family:Arial,sans-serif;background:#0b1020;color:#fff;padding:20px
+    }
+    .box{
+      width:min(720px,100%);background:#121a2e;border:1px solid #273452;
+      border-radius:20px;padding:28px;box-shadow:0 20px 60px #0008
+    }
+    h1{margin:0 0 8px;font-size:28px}
+    p{color:#9eabc5;margin:0 0 22px}
+    .row{display:flex;gap:10px}
+    input{
+      flex:1;min-width:0;padding:15px;border-radius:12px;
+      border:1px solid #33415f;background:#0b1121;color:white;font-size:15px
+    }
+    button{
+      border:0;border-radius:12px;padding:0 20px;font-weight:700;
+      background:#4f8cff;color:white;cursor:pointer
+    }
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .result{display:none;margin-top:20px;padding:16px;border-radius:12px;background:#0b1121}
+    .label{font-size:13px;color:#8fa0bf;margin-bottom:8px}
+    .url{word-break:break-all;line-height:1.5}
+    .copy{margin-top:12px;padding:10px 14px}
+    .error{color:#ff8f8f}
+    @media(max-width:560px){.row{flex-direction:column}button{height:48px}}
+  </style>
+</head>
+<body>
+  <main class="box">
+    <h1>🔗 LINK DESTINATION</h1>
+    <p>Dán link rút gọn/redirect để lấy URL đích cuối cùng.</p>
+
+    <div class="row">
+      <input id="url" placeholder="https://..." autocomplete="off">
+      <button id="go">Lấy link đích</button>
+    </div>
+
+    <section id="result" class="result">
+      <div class="label">LINK ĐÍCH</div>
+      <div id="output" class="url"></div>
+      <button id="copy" class="copy">📋 Sao chép</button>
+    </section>
+  </main>
+
+<script>
+const input = document.getElementById("url");
+const go = document.getElementById("go");
+const result = document.getElementById("result");
+const output = document.getElementById("output");
+const copy = document.getElementById("copy");
+
+go.onclick = async () => {
+  const url = input.value.trim();
+  if (!url) return;
+  go.disabled = true;
+  go.textContent = "Đang xử lý...";
+  result.style.display = "block";
+  output.className = "url";
+  output.textContent = "Đang tìm link đích...";
+
+  try {
+    const r = await fetch("/api/resolve", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({url})
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || "Có lỗi xảy ra.");
+    output.textContent = data.destination;
+  } catch (e) {
+    output.className = "url error";
+    output.textContent = e.message;
+  } finally {
+    go.disabled = false;
+    go.textContent = "Lấy link đích";
+  }
+};
+
+copy.onclick = async () => {
+  await navigator.clipboard.writeText(output.textContent);
+  copy.textContent = "✅ Đã sao chép";
+  setTimeout(() => copy.textContent = "📋 Sao chép", 1500);
+};
+
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter") go.click();
+});
+</script>
+</body>
+</html>
